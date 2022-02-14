@@ -1,5 +1,4 @@
 $("#submit-button").click(() => {
-    console.log(2.0)
     var from = $("#from").find(":selected").val()
     var to = $("#to").find(":selected").val()
     var from_date = $("#from_date").val()
