@@ -8,14 +8,14 @@
             <p>Ceļojums:</p>
             <div>
                 <select name="from" id="from">
-                    <option value="">No:</option>
+                    <option value="">Nenoteikts:</option>
                         {% for country in countries %}
                             <option value="{{ country.id }}">{{ country.country }}</option>
                         {% endfor %}
                 </select>
                 →
                 <select name="to" id="to">
-                    <option value="">Uz:</option>
+                    <option value="">Nenoteikts:</option>
                         {% for country in countries %}
                             <option value="{{ country.id }}">{{ country.country }}</option>
                         {% endfor %}
