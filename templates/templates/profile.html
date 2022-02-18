@@ -1,0 +1,87 @@
+{% extends "index.html" %}
+
+{% block title %}Profils{% endblock %}
+
+{% block content %}
+    <div class="navigation-bar">
+        <a href="/about_us">Par Mums</a>
+            {% if user.role == "admin" %}
+                <a href="/admin">Vadības panelis</a>
+            {% endif %}
+        <a href="/logout">Iziet</a>
+    </div>
+
+    <p class="nomasText">Nomā mašīnu jau tagad!</p>
+
+    <div id="poga">
+        <button id=jaunaNoma>Nomāt Automašīnu</button>
+    </div>
+
+    <div id="lodzinjs" class="form-box">
+        <form class="form" id="form" method="POST" action="/add_car_reservantion">
+            <h3 class="h3Krasa">Nomāt automašīnu!</h3>
+            <h4 name="id">ID {{user.id}}</h4>
+            <h4 name="firstname">Vārds: {{user.firstname}}</h4>
+            <h4 name="lastname">Uzvārds: {{user.lastname}}</h4>
+            <h4 name="email">E-pasts: {{user.email}}</h4>
+            <h4 name="address">Dzīves vieta: {{user.address}}</h4>
+            <h4 name="mobile_number">Telefona numurs: {{user.mobile_number}}</h4>
+            <select onchange="filter_cars()" id="rental_point" name="rental_point">
+                <option value="-1">Izvēlieties nomas punktu</option>
+                {% for rental_point in rental_points %}
+                    <option value="{{ rental_point.id }}">{{ rental_point.title }}</option>
+                {% endfor %}
+            </select>
+            <select onchange="filter_rental_points()" id="cars" name="car">
+                <option  value="-1">Izvēlieties automašīnu</option>
+                    {% for car in cars %}
+                        <option  value="{{ car.rental_point_id }}">{{ car.manufacture }} - {{ car.model }} - {{ car.year }}</option>
+                    {% endfor %}
+            </select>
+            <div class="date-box">
+                <div>
+                    <label for="from_date">No:</label><input id="from_date" type="date" name="from_date" value="{{ date }}">
+                </div>
+                <div>
+                    <input id="no" type="time" value="00:00" required>
+                </div>
+                <div>
+                    <label for="to_date">Līdz:</label><input id="to_date" type="date" name="to_date">
+                </div>
+                <div>
+                    <input id="lidz" type="time" value="00:00" required>
+                </div>
+            </div>
+            <h4 class="hourly-rate">Stundas likme: </h4>
+            <button onclick="alerts()" type="submit" id="PrecesPoga">Pievienot</button>
+        </form>
+    </div>
+    
+    <div id="biblioteka">
+        <!-- {% for car in cars %}
+            <div class="jaunsLogs">
+                <h4> ID: {{ car.id }}</h4>
+                <h4>Vārds: {{ user.firstname }}</h4>
+                <h4>Uzvārds: {{ user.lastname }}</h4>
+                <h4>Dzīves vieta: {{ user.address }}</h4>
+                <h4>Telefona numurs: {{ user.mobile_number }}</h4>
+                <h4>Automobīļa marka: {{ car.car }}</h4>
+                <h4>Nomas datums no: {{ car.from_date }}</h4>
+                <h4>Nomas datums līdz: {{ car.to_date }}</h4>
+                {% if car.booked_status == 0 %}
+                    <h5 class="nomas_apstrade">Automašīnas nomas pieprasijums tiek apstrādāts!</h5>
+                {% elif car.booked_status == 1 %}
+                    <h5 class="noma_apstiprinata">Noma apstiprināta!</h5>
+                {% elif car.booked_status == 2 %}
+                    <h5 class="noma_noraidita">Noma noraidīta!</h5>
+                {% else %}
+                    <h5>Notikusi ļoti aizdomīga kļūda!</h5>
+                {% endif %}
+                <a href="/delete_car/{{ car.id }}"><button class="delete_car_button">Atcelt nomu</button></a>
+            </div>
+        {% endfor %} -->
+    </div>
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+    <script src="/static/js/autoNoma.js"></script>
+    <script src="/static/js/rental_point_filter.js"></script>
+{% endblock %}

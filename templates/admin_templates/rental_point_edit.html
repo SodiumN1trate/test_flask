@@ -1,0 +1,15 @@
+{% extends "admin.html" %}
+
+{% block title %}Automabīļu pārvalde{% endblock %}
+
+{% block content %}
+<div id="lodzinjs" class="form-box">
+    <form class="form" method="POST" action="/admin/rental_point/edit/{{ rental_point.id }}">
+        <h3 class="h3Krasa">Rediģēt autonomas punktu!</h3>
+        <input type="text" name="title" value="{{ rental_point.title }}" autocomplete="off" required>
+        <input type="text" name="city" value="{{ rental_point.city }}" autocomplete="off" required>
+        <input type="text" name="address" value="{{ rental_point.address }}" autocomplete="off" required>
+        <button type="submit" id="PrecesPoga">Rediģēt datus</button>
+    </form>
+</div>
+{% endblock %}

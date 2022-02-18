@@ -1,0 +1,18 @@
+{% extends "admin.html" %}
+
+{% block title %}Automabīļu pārvalde{% endblock %}
+
+{% block content %}
+<div id="lodzinjs" class="form-box">
+    <form class="form" method="POST" action="/admin/rental_point_detail/edit/{{ car.rental_point_id }}/{{ car.id }}">
+        <h3 class="h3Krasa">Rediģet autonomas automašīnu!</h3>
+        <input type="text" name="manufacture" value="{{ car.manufacture }}" autocomplete="off" placeholder="Automašīnas marka" required>
+        <input type="text" name="model" value="{{ car.model }}" autocomplete="off" placeholder="Automašīnas modelis" required>
+        <input type="text" name="classifications" value="{{ car.classifications }}" placeholder="Automašīnas klase" autocomplete="off" required>
+        <input type="text" name="year" value="{{ car.year }}" autocomplete="off" placeholder="Izlaišanas gads" required>
+        <input type="text" name="number_plate" value="{{ car.number_plate }}" placeholder="Numura zīme" autocomplete="off" required>
+        <input type="text" name="hourly_rate" value="{{ car.hourly_rate }}" placeholder="Stundas likme" autocomplete="off" required>
+        <button type="submit" id="PrecesPoga">Rediģēt datus</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "index.html" %}
+
+{% block title %}Reģistrācija{% endblock %}
+
+{% block content %}
+<div>
+    <div class="form-box">
+        <form id="form" method="POST" action="/new_user_register">
+            <h3 class="h3Krasa">Reģistrācijas lapa</h3>
+            <div class="form_group">
+                <input class="form_input" type="text" name="firstname" placeholder=" " autocomplete="off" required>
+                <label class="form_label">Vārds</label>
+            </div>
+            <div class="form_group">
+                <input class="form_input" type="text" name="lastname" placeholder=" " autocomplete="off" required>
+                <label class="form_label">Uzvārds</label>
+            </div>
+            <div class="form_group">
+                <input class="form_input" type="email" name="email" placeholder=" ">
+                <label class="form_label">email</label>
+            </div>
+            <div class="form_group">
+                <input class="form_input" type="password" name="password" placeholder=" " autocomplete="off" required>
+                <label class="form_label">parole</label>
+            </div>
+            <div class="form_group">
+                <input class="form_input"type="password" name="password_confirm" placeholder=" " autocomplete="off" required>
+                <label class="form_label">atkārtojiet paroli</label>
+            </div>
+            <div class="form_group">
+                <input class="form_input" type="text" name="address" placeholder=" " autocomplete="off" required>
+                <label class="form_label">Dzīves vieta</label>
+            </div>
+            <div class="form_group">
+                <input class="form_input" type="text" name="mobile_number" placeholder=" " autocomplete="off" required>
+                <label class="form_label">+371 telefona numurs</label>
+            </div>
+            <button type="submit" id="PrecesPoga">Reģistrēties</button>
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                        <h4 class="error">{{ message }}</h4>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </form>
+    </div>
+</div>
+{% endblock %}

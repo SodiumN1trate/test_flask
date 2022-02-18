@@ -3,7 +3,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from sqlalchemy import MetaData
 
-# Database
 
 convention = {
     "ix": 'ix_%(column_0_label)s',
@@ -15,84 +14,89 @@ convention = {
 
 _metadata = MetaData(naming_convention=convention)
 
-# Database Connection
-db_name = 'travely_database.db'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_name
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///AutoNomasDB.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 
 db = SQLAlchemy(app, metadata=_metadata)
 
 # Migrate
-migrate = Migrate(app, db, render_as_batch=True)
+migrate = Migrate(app, db)
 
-
-class Agency(db.Model):
+class RentalPoint(db.Model):
+    __tablename__ = 'rental_point'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(120), nullable=False)
-    address = db.Column(db.String(120))
-    number = db.Column(db.String(18))
-    children = db.relationship("Trip", cascade="all, delete")
-    def __repr__(self):
-        return self.name
+    title = db.Column(db.String(25), nullable=False)
+    city = db.Column(db.String(25), nullable=False)
+    address = db.Column(db.String(25), nullable=False)
+    car = db.relationship("Car", cascade="all, delete")
 
-class Country(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    country = db.Column(db.String(48), nullable=False)
-    abbreviation = db.Column(db.String(2), nullable=False)
     def __repr__(self):
-        return f'{self.country}, {self.abbreviation}'
+        return '<RentalPoint %r>' % (self.title)
 
-class Trip(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    agency_id = db.Column(db.Integer, db.ForeignKey("agency.id"))
-    country_from = db.Column(db.Integer)
-    country_to = db.Column(db.Integer)
-    date_from = db.Column(db.Date)
-    date_to = db.Column(db.Date)
-    description = db.Column(db.String(280))
-    cost = db.Column(db.Float)
-    ticket_amount = db.Column(db.Integer)
-    views = db.Column(db.Integer)
-    def __repr__(self):
-        return f'<Trip: {self.country_from} - {self.country_to} from agency {self.agency_id}>'
-
-    def get_agency_from_id(self):
-        return Agency.query.filter(Agency.id == self.agency_id).first()
-    
     def serialize(self):
-        return {
-            "id": self.id,
-            "agency_id": self.agency_id,
-            "country_from_id": self.country_from,
-            "country_to_id": self.country_to,
-            "country_from": "",
-            "country_to": "",
-            "date_from": self.date_from,
-            "date_to": self.date_to,
-            "description": self.description,
-            "cost": self.cost,
-            "ticket_amount": self.ticket_amount,
-            "views": self.views
-            }
+        return {"id": self.id,
+                "title": self.title,
+                "city": self.city,
+                "address": self.address
+                }
+
 class User(db.Model):
+    __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(30), nullable=False, unique=True)
-    password = db.Column(db.String(30), nullable=False)
-    name = db.Column(db.String(30), nullable=False)
-    surname = db.Column(db.String(30), nullable=False)
-    role_id = db.Column(db.Integer)
+    firstname = db.Column(db.String(20), nullable=False)
+    lastname = db.Column(db.String(20), nullable=False)
+    email = db.Column(db.String(40), nullable=False)
+    password = db.Column(db.String(40), nullable=False)
+    address = db.Column(db.String(40), nullable=False)
+    mobile_number = db.Column(db.String(20), nullable=False)
+    role = db.Column(db.String(5), nullable=False)
+    car = db.relationship("UserCar", cascade="all, delete")
+
     def __repr__(self):
-        return f'User: {self.name} {self.surname}, roleID = {self.role_id}'
-    
+        return '<User %r>' % (self.firstname)
 
-'''
-set FLASK_APP=models.py
 
-flask db init
+class Car(db.Model):
+    __tablename__ = 'car'
+    id = db.Column(db.Integer, primary_key=True)
+    manufacture = db.Column(db.String(20), nullable=False)
+    model = db.Column(db.String(20), nullable=False)
+    classifications = db.Column(db.String(15), nullable=False)
+    year = db.Column(db.Integer, nullable=False)
+    number_plate = db.Column(db.String(10), nullable=False)
+    hourly_rate = db.Column(db.Integer, nullable=False)
+    from_date = db.Column(db.DateTime, nullable=False)
+    to_date = db.Column(db.DateTime, nullable=False)
+    reservation = db.relationship("UserCar", cascade="all, delete")
+    rental_point_id = db.Column(db.Integer, db.ForeignKey("rental_point.id"))
 
-flask db migrate -m "(nosaukums)"
+    def __repr__(self):
+        return '<Car %r %r>' % (self.manufacture , self.id)
 
-flask db upgrade
+    def serialize(self):
+        return {"id": self.id,
+                "manufacture": self.manufacture,
+                "rental_point": "",
+                "model": self.model,
+                "classifications": self.classifications,
+                "year": self.year,
+                "number_plate": self.number_plate,
+                "hourly_rate": self.hourly_rate,
+                "from_date": self.from_date,
+                "to_date": self.to_date,
+                "rental_point_id": self.rental_point_id
+                }
 
-flask db migrate -m "Atbilstoši, esmu pievienojis jaunu, kritiski vajadzīgu tabulu iekš jau iepriekšveidotās datubāzes, ko izmantojam šajā vietnē. Atbilstoši, tabulas nosaukums ir Country."
-'''
+class UserCar(db.Model):
+    __tablename__ = 'user_car'
+    id = db.Column(db.Integer, primary_key=True)
+    from_date = db.Column(db.DateTime, nullable=False)
+    to_date = db.Column(db.DateTime, nullable=False)
+    price = db.Column(db.Float, nullable=False)
+    reservation_number = db.Column(db.Integer, primary_key=True)
+    booked_status = db.Column(db.Integer, default=0)
+    car_id = db.Column(db.Integer, db.ForeignKey("car.id"))
+    owner_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+
+    def __repr__(self):
+        return '<UserCar %r %r>' % (self.car , self.id)

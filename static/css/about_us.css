@@ -1,0 +1,98 @@
+a {
+    text-decoration: none;
+}
+
+a:hover {
+    color: gray;
+}
+
+a:active {
+    color: grey
+}
+.navigation-bar {
+    display:flex;
+    justify-content: center;
+    gap: 1%;
+
+}
+
+.navigation-bar > a {
+    border: none;
+    border-radius: 5px;
+    background-color: white;
+    color: black;
+    padding: 5px 7px ;
+    margin-top: 0px;
+    margin-left: 98%;
+    outline: none;
+    cursor: pointer;
+    transition: 0.3s;
+    font-family: sans-serif;
+    letter-spacing: 0.6px;
+    transition: color 0.2s linear;
+
+}
+.navigation-bar:hover{
+    color: rgb(191, 191, 236);
+}
+
+.Header { 
+    font-family:'Times New Roman', Times, serif ;
+    font-size: 65px;
+    color: white;
+    margin-top: -10%;
+
+}
+
+.form-box {
+    margin: 0%;
+    padding: 20px;
+    width: 960px;
+    margin-top: 25%;
+    font-size: 15px;
+    font-family: sans-serif;
+    letter-spacing: 0.6px;
+    text-align: left;
+    color: white;
+    margin-left: 12%;
+    
+
+}
+.Social_media{
+    color: white;
+    margin: auto;
+    margin-top: -10%;
+    margin-left: 82%;
+    font-family: sans-serif;
+    font-size: 17px;
+}
+.Link{
+    color: rgb(255, 255, 255);
+    text-decoration: none ;
+    font-family: sans-serif;
+    font-size: 17px;
+    transition: color 0.2s linear;
+}
+
+.Link:hover{
+    color: rgb(191, 191, 236);
+}
+.Kontakti{
+    color: white;
+    margin: auto;
+    margin-top: 2%;
+    margin-left: 82%;
+    font-family: sans-serif;
+    font-size: 17px; 
+}
+
+.Kontakti_Inf{
+    color: rgb(255, 255, 255);
+    text-decoration: none ;
+    font-family: sans-serif;
+    font-size: 17px;
+
+}
+.Kontakti_Inf:hover{
+    color: rgb(191, 191, 236);
+}

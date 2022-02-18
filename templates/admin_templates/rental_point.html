@@ -1,0 +1,80 @@
+{% extends "admin.html" %}
+
+{% block title %}Automabīļu pārvalde{% endblock %}
+
+{% block content %}
+<div class="navigation-bar">
+    <a href="/profile">Profils</a>
+    <a href="/admin">Vadības panelis</a>
+    <a href="/logout">Iziet</a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            {% if category == "success" %}
+                ]<h4 class="success">{{ message }}</h4>
+            {% else %}
+                <h4 class="error">{{ message }}</h4>
+            {% endif %}    
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="form-box-container">
+    <div id="lodzinjs" class="form-box">
+        <form class="form" method="POST" action="/admin/set_rental_point">
+            <h3 class="h3Krasa">Pievienot autonomas punktu!</h3>
+            <input type="text" name="title" placeholder="Punkta nosaukums" autocomplete="off" required>
+            <input type="text" name="city" placeholder="Pilsēta" autocomplete="off" required>
+            <input type="text" name="address" placeholder="adrese" autocomplete="off" required>
+            <button type="submit" id="PrecesPoga">Pievienot</button>
+        </form>
+    </div>
+    <div id="lodzinjs" class="form-box">
+        <form class="form" method="POST" action="/admin/add_car">
+            <h3 class="h3Krasa">Pievieno automašīnu Autonomas punktam!</h3>
+            <select name="rental_point">
+                {% for rental_point in rental_points %}
+                    <option value="{{ rental_point.title }}">{{ rental_point.title }}</option>
+                {% endfor %}
+            </select>
+            <input type="text" name="manufacture" placeholder="Automašīnas marka" autocomplete="off" required>
+            <input type="text" name="model" placeholder="Automašīnas modelis" autocomplete="off" required>
+            <input type="text" name="classifications" placeholder="Automašīnas klase" autocomplete="off" required>
+            <input type="text" name="year" placeholder="Izlaišanas gads" autocomplete="off" required>
+            <input type="text" name="number_plate" placeholder="numura zīme" autocomplete="off" required>
+            <input type="text" name="hourly_rate" placeholder="stundas likme" autocomplete="off" required>
+            <div class="date-box">
+                <div>
+                    <label for="from_date">No:</label><input id="from_date" type="date" name="from_date" value="{{ date }}">
+                </div>
+                <div>
+                    <input id="no" name="from_time" type="time" value="00:00" required>
+                </div>
+                <div>
+                    <label for="to_date">Līdz:</label><input id="to_date" type="date" name="to_date">
+                </div>
+                <div>
+                    <input id="lidz" name="to_time" type="time" value="00:00" required>
+                </div>
+            </div>
+            <button type="submit" id="PrecesPoga">Pievienot</button>
+        </form>
+    </div>
+</div>
+
+<h1>Autonomas punkti: </h1>
+<div class="list-container">
+    {% for rental_point in rental_points %}
+        <div class="list-element">
+            <a href="/admin/rental_point/{{ rental_point.id }}"><h2>Nosaukums: {{ rental_point.title }}</h2></a>
+            <h3>Pilsēta: {{ rental_point.city }}</h3>
+            <h3>Adrese: {{ rental_point.address }}</h3>
+            <a href="/admin/rental_point_edit/{{ rental_point.id }}"><button>Rediģēt</button></a>
+            <a href="/admin/rental_point/delete/{{ rental_point.id }}"><button>Dzēst</button></a>
+        </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

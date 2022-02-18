@@ -1,193 +1,293 @@
-from os import name
-from flask import render_template, redirect, request, Response
-from flask.helpers import url_for
-from wtforms.fields.choices import SelectField
-from wtforms.validators import DataRequired
+from flask import Response, Flask, render_template, request, redirect, session
+from flask.helpers import url_for, flash
 from settings import app
-from forms import *
-from models import *
+from models import Car
+from business_logic import *
+from datetime import date
+from flask import jsonify
 import json
-from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
 
 @app.route('/')
-def index():
-    return render_template("index.html")
-
-@app.route('/catalogue')
-def celojumi():
-    return render_template("catalogue.html", trips=Trip.query.all(), countries=Country.query.all())
+def home():
+  return render_template("index.html", cars_manufactures = get_unique_manufactures(), rental_points = get_all_rental_points())
 
 @app.route('/admin')
 def admin():
-    return redirect(url_for("admin_agencies"))
+  try:
+    if is_user_logged() and is_user_admin(session['user']):
+      return render_template("admin.html", user_cars = get_all_users_cars())
+    else:
+      return redirect(url_for('home'))
+  except Exception as e:
+    flash(str(e))
+    return redirect(url_for('home'))
 
-@app.route('/profils')
-def profils():
-    return render_template("profile.html")
+@app.route('/admin/rental_point_manager')
+def rental_point():
+  try:
+    if is_user_logged() and is_user_admin(session['user']):
+      return render_template("admin_templates/rental_point.html", rental_points = get_all_rental_points())
+    else:
+      return redirect(url_for('home'))
+  except Exception as e:
+    flash(str(e))
+    return redirect(url_for('home'))
+
+@app.route('/about_us')
+def izvele():
+  return render_template("templates/about_us.html")
 
 @app.route('/register')
 def register():
-    return render_template("templates/register.html") # To Do
+  return render_template("templates/register.html")
 
-@app.route('/admin/agencies')
-def admin_agencies():
-    return render_template("templates/agencies.html", agencies = Agency.query.all())
+@app.route('/login')
+def login():
+  return render_template("templates/login.html")
 
-@app.route('/admin/countries')
-def admin_countries():
-    return render_template("templates/countries.html", countries = Country.query.all(), agencies = Agency.query.all())
+@app.route('/profile')
+def profile():
+  try:
+    if is_user_logged():
+      return render_template("templates/profile.html", cars = get_cars(), user = get_user_data(session['user']), date = date.today().strftime("%Y-%m-%d"), rental_points = get_all_rental_points())
+    else:
+      return redirect(url_for('home'))
+  except Exception as e:
+    flash(str(e))
+    return redirect(url_for('home'))
 
-@app.route('/admin/trips')
-def admin_trips():
-    return render_template("templates/trips.html", trips = Trip.query.all(), agencies = Agency.query.all(), countries = Country.query.all())
-
-# Aģentūru un ceļojumu pievienošana
-@app.route('/admin/add')
-def admin_add():
-    return redirect(url_for("admin_add_agencies"))
-
-@app.route('/admin/add/agencies', methods=['GET', 'POST'])
-def admin_add_agencies():
-    form = AddAgencyForm()
-    if form.validate_on_submit():
-        # --Gundars
-        # Vēlāk šeit (un admin_add_trips()) tiks pievienotas datu pārbaudes
-        # Pagaidām, lai būtu iespējams strādāt ar datiem, atstāšu tīrus inputus
-        agency = Agency(name=form.name.data, address=form.address.data, number=form.phone_number.data)
-        db.session.add(agency)
-        db.session.commit()
-        return redirect(url_for('admin'))
-    return render_template("templates/add_agency.html", form=form)
-
-@app.route('/admin/add/country', methods=['GET', 'POST'])
-def admin_add_country():
-    form = AddCountryForm()
-    if form.validate_on_submit():
-        country = Country(country=form.country.data, abbreviation=form.abbreviation.data)
-        db.session.add(country)
-        db.session.commit()
-        return redirect(url_for('admin_countries'))
-    return render_template("templates/add_country.html", form=form)
-
-@app.route('/admin/add/trips', methods=['GET', 'POST'])
-def admin_add_trips():
-    # Lai dinamiski atjauninātu aģentūru sarakstu ceļojumu izveides lapā
-    # Aģentūru izvēlnes attribūts tiek pievienots klases struktūrai, ne instancei
-    agencies = SelectField('Aģentūra', choices=Agency.query.all(), validators=[DataRequired()])
-    country_from = SelectField('Izceļošanas valsts', choices=Country.query.all(), validators=[DataRequired()])
-    country_to = SelectField('Galamērķa valsts', choices=Country.query.all(), validators=[DataRequired()])
-
-    setattr(AddTripForm, 'agency', agencies)
-    setattr(AddTripForm, 'country_from', country_from)
-    setattr(AddTripForm, 'country_to', country_to)
-    
-    # Pēc tā var izveidot 'form' objektu ar atjauninātu aģentūru sarakstu
-    form = AddTripForm()
-    if form.validate_on_submit():
-        # Pārbaude
-        agency = Agency.query.filter_by(name=form.agency.data).first().id
-        country_from = Country.query.filter_by(country=form.country_from.data.split(",")[0]).first().id
-        country_to = Country.query.filter_by(country=form.country_to.data.split(",")[0]).first().id
-        trip = Trip(
-            agency_id=agency,
-            country_from=country_from,
-            country_to=country_to,
-            date_from=form.date_from.data,
-            date_to=form.date_to.data,
-            description=form.description.data,
-            cost=form.cost.data,
-            ticket_amount=form.ticket_amount.data,
-            views=0 )
-        db.session.add(trip)
-        db.session.commit()
-        return redirect(url_for('admin_trips'))
-    return render_template("templates/add_trip.html", form=form)
-
-# Aģentūru un ceļojumu dzēšana
-@app.route('/admin/remove/agency/<int:id>')
-def admin_remove_agency(id):
-    remove_agency = Agency.query.filter_by(id=id).first()
-    db.session.delete(remove_agency)
-    db.session.commit()
-    return redirect(url_for('admin_agencies'))
-
-@app.route('/admin/remove/country/<int:id>')
-def admin_remove_country(id):
-    remove_country = Country.query.filter_by(id=id).first()
-    db.session.delete(remove_country)
-    db.session.commit()
-    return redirect(url_for('admin_countries'))
-
-@app.route('/admin/remove/trip/<int:id>')
-def admin_remove_trip(id):
-    remove_trip = Trip.query.filter_by(id=id).first()
-    db.session.delete(remove_trip)
-    db.session.commit()
-    return redirect(url_for('admin_trips'))
-
-@app.route('/sign_up', methods=['POST'])
-def sign_up():
-    form = AddUserForm()
-    if request.method == "POST":
-        user = User(
-            email = request.form['email'],
-            password = generate_password_hash(request.form['password'], method='sha256'),
-            name = request.form['name'],
-            surname = request.form['surname'],
-            role_id = 0 )
-        db.session.add(user)
-        db.session.commit()
-        return str(user)
+@app.route('/add_car_reservantion', methods=["POST"])
+def add_car_reservantion():
+  if request.method == "POST":
+    save_car_booking(request.form, session['user'])
+    return redirect(url_for('profile'))
+  else:
     return "404"
 
-@app.route('/sign_in', methods=['POST'])
-def sign_in():
-    form = SignInForm()
+@app.route('/delete_car/<id>')
+def delete_car(id):
+  try:
+    remove_car(id)
+  except Exception as e:
+    flash(str(e))
+  if is_user_admin(session['user']):
+    return redirect(url_for('admin'))
+  else:
+    return redirect(url_for('profile'))
+
+@app.route('/new_user_register', methods=['POST'])
+def new_user_register():
+  try:
     if request.method == "POST":
-        user = User.query.filter_by(email=request.form['email']).first()
-        if not user or not check_password_hash(user.password, request.form['password']):
-            return "Nav tāds lietotājs"
-        else:
-            return str(user)
+      save_user_registration(request.form)
+      return redirect(url_for('profile'))
+  except Exception as e:
+    flash(str(e))
+    return redirect(url_for('register'))
 
-    return "404"
-    # return render_template("templates/register.html") # To Do
+@app.route('/user_login', methods=['POST'])
+def user_login():
+  try:
+    if request.method == "POST":
+      compare_user_login(request.form)
+      return redirect(url_for('profile'))
+  except Exception as e:
+    flash(str(e))
+    return redirect(url_for('login'))
 
-@app.route('/catalogue_filter', methods=["POST"])
-def catalogue_filtes():
-    Trips = Trip.query.all()
+@app.route('/logout')
+def logout():
+  session['user'] = None
+  flash("Jūs veiksmīgi izrakstījāties!")
+  return redirect(url_for('home'))
+
+@app.route('/admin/set_booking_status/<car_id>/<status_code>')
+def set_booking_status(car_id, status_code):
+  try:
+    if is_user_logged() and is_user_admin(session['user']):
+      set_status_code(car_id, status_code)
+      return redirect(url_for('admin'))
+    else:
+      return redirect(url_for('home'))
+  except Exception as e:
+    flash(str(e))
+    return redirect(url_for('home'))
+
+@app.route("/admin/set_rental_point", methods=["POST"])
+def set_rental_point():
+  try:
+    if is_user_logged() and is_user_admin(session['user']):
+      set_new_rental_point(request.form)
+      flash("Tika pievienots autonomas punkts", "success")
+      return redirect(url_for('rental_point'))
+    else:
+      return redirect(url_for('home'))
+  except Exception as e:
+    flash(str(e))
+    return redirect(url_for('home'))
+
+@app.route("/admin/add_car", methods=["POST"])
+def add_car():
+  try:
+    if is_user_logged() and is_user_admin(session['user']):
+      set_new_car(request.form)
+      flash("Tika pievienota automašīna", "success")
+      return redirect(url_for('rental_point'))
+    else:
+      return redirect(url_for('home'))
+  except Exception as e:
+    flash(str(e))
+    return redirect(url_for('home'))
+
+
+@app.route("/admin/rental_point/<id>")
+def rental_point_detail(id):
+  try:
+    if is_user_logged() and is_user_admin(session['user']):
+      return render_template("admin_templates/rental_point_detail.html", cars=get_rental_point_cars(id))
+    else:
+      return redirect(url_for('home'))
+  except Exception as e:
+    flash(str(e))
+    return redirect(url_for('home'))
+
+@app.route("/admin/rental_point/delete/<id>")
+def rental_point_delete(id):
+  try:
+    if is_user_logged() and is_user_admin(session['user']):
+      delete_rental_point(id)
+      flash("Tika veiksmīgi izdzēsts autonomas punkts", "success")
+      return redirect(url_for('rental_point'))
+    else:
+      return redirect(url_for('home'))
+  except Exception as e:
+    flash(str(e))
+    return redirect(url_for('home'))
+
+@app.route("/admin/rental_point_edit/<id>")
+def rental_point_edit_page(id):
+  try:
+    if is_user_logged() and is_user_admin(session['user']):
+      return render_template("admin_templates/rental_point_edit.html", rental_point=get_rental_point(id))
+    else:
+      return redirect(url_for('home'))
+  except Exception as e:
+    flash(str(e))
+    return redirect(url_for('home'))
+
+
+@app.route("/admin/rental_point/edit/<id>", methods=["POST"])
+def rental_point_edit(id):
+  try:
+    if is_user_logged() and is_user_admin(session['user']):
+      edit_rental_point(id, request.form)
+      return redirect(url_for('rental_point'))
+    else:
+      return redirect(url_for('home'))
+  except Exception as e:
+    flash(str(e))
+    return redirect(url_for('home'))
+
+@app.route("/admin/rental_point_detail_edit/<id>")
+def rental_point_detail_edit_page(id):
+  try:
+    if is_user_logged() and is_user_admin(session['user']):
+      return render_template("admin_templates/rental_point_detail_edit.html", car=get_rental_point_car(id))
+    else:
+      return redirect(url_for('home'))
+  except Exception as e:
+    flash(str(e))
+    return redirect(url_for('home'))
+
+@app.route("/admin/rental_point_detail/edit/<rental_point_id>/<id>", methods=["POST"])
+def rental_point_detail_edit(rental_point_id, id):
+  try:
+    if is_user_logged() and is_user_admin(session['user']):
+      edit_rental_point_detail(id, request.form)
+      return redirect(url_for('rental_point_detail', id=rental_point_id))
+    else:
+      return redirect(url_for('home'))
+  except Exception as e:
+    flash(str(e))
+    return redirect(url_for('home'))
+
+@app.route("/admin/rental_point_car/delete/<rental_point_id>/<car_id>")
+def rental_point_car_delete(rental_point_id, car_id):
+  try:
+    if is_user_logged() and is_user_admin(session['user']):
+      delete_rental_point_car(car_id)
+      flash("Tika veiksmīgi izdzēsts autonomas punkts", "success")
+      return redirect(url_for('rental_point_detail', id=rental_point_id))
+    else:
+      return redirect(url_for('home'))
+  except Exception as e:
+    flash(str(e))
+    return redirect(url_for('home'))
+
+
+# REST API
+@app.route("/rental_point_cars/<id>")
+def api_rental_point_cars(id):
+  cars = []
+  for car in get_rental_point_cars(id):
+    cars.append(car.serialize())
+  return Response(json.dumps(cars), mimetype='application/json')
+
+@app.route("/cars")
+def api_get_cars():
+  cars = []
+  for car in get_cars():
+    cars.append(car.serialize())
+  return Response(json.dumps(cars), mimetype='application/json')
+
+@app.route("/rental_point/<id>")
+def api_rental_point(id):
+  return Response(json.dumps(get_rental_point(id).serialize()), mimetype='application/json')
+
+@app.route("/rental_points")
+def api_rental_points():
+  retal_points = []
+  for retal_point in get_all_rental_points():
+    retal_points.append(retal_point.serialize())
+  return Response(json.dumps(retal_points), mimetype='application/json')
+
+@app.route("/get_manufacture_models", methods=["POST"])
+def api_manufacture_models():
+  return Response(json.dumps(get_unique_car_models_by_manufacture(request.form['manufacture'])), mimetype='application/json')
+
+@app.route("/filter_cars", methods=["POST"])
+def api_filter_cars():
+    cars = Car.query.all()
     validations = {
-        "country_from_id": None if not request.form['from'] else int(request.form['from']),
-        "country_to_id": None if not request.form['to'] else int(request.form['to']),
-        "date_from": None if not request.form['from_date'] else datetime.strptime(request.form['from_date'], '%Y-%m-%d').date(),
-        "date_to": None if not request.form['to_date'] else datetime.strptime(request.form['to_date'], '%Y-%m-%d').date()
+        "rental_point_id": None if not request.form['rental_point'] else int(request.form['rental_point']),
+        "manufacture": None if not request.form['manufacture'] else request.form['manufacture'],
+        "model": None if not request.form['model'] else request.form['model'],
+        "from_date": None if not request.form['from_date'] else datetime.strptime(request.form['from_date'] + " " + request.form['from_time'], "%Y-%m-%d %H:%M"),
+        "to_date": None if not request.form['to_date'] else datetime.strptime(request.form['to_date'] + " " + request.form['to_time'], "%Y-%m-%d %H:%M")
     }
     output = []
     requirements = len(validations)
     valids_passed = 0
-    for trip in Trips:
-        trip = trip.serialize()
+    for car in cars:
+        car = car.serialize()
         for validation in validations:
             if validations[validation] == None:
                 requirements -= 1
                 continue
             else:
-                if (validation == "date_from" and trip[validation] >= validations[validation] or
-                    validation == "date_to" and trip[validation] <= validations[validation] or
-                    trip[validation] == validations[validation]
+                if (validation == "from_date" and car[validation] >= validations[validation] or
+                    validation == "to_date" and car[validation] <= validations[validation] or
+                    car[validation] == validations[validation]
                 ):
                     valids_passed += 1 
         
         if valids_passed == requirements:
-            trip['country_from'] = Country.query.filter(Country.id==trip['country_from_id']).first().country
-            trip['country_to'] = Country.query.filter(Country.id==trip['country_to_id']).first().country
-            output.append(trip)
+            car['rental_point'] = RentalPoint.query.filter_by(id=car['rental_point_id']).first().title
+            output.append(car)
 
         requirements = len(validations)
         valids_passed = 0
     return Response(json.dumps(output, default=str), mimetype='application/json')
 
-
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080)
+  app.run(host='0.0.0.0', port=80)
